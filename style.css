@@ -1,0 +1,108 @@
+/* Fondo general con estilo azul y elementos suaves */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to bottom right, #3a7bd5, #00d2ff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* Contenedor del login centrado */
+.login-container {
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.2);
+  width: 380px;
+  max-width: 90%;
+  position: relative;
+  z-index: 1;
+}
+
+/* Título con ícono y texto "admin" */
+.login-box h2 {
+  text-align: center;
+  font-size: 1.8em;
+  margin-bottom: 20px;
+  color: #333;
+  position: relative;
+}
+
+.login-box h2::before {
+  content: "👤 admin";
+  display: block;
+  font-size: 1.2em;
+  color: #555;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* Campos de entrada */
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 14px;
+  margin: 12px 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1em;
+  background-color: #f9f9f9;
+}
+
+/* Contenedor de checkbox y enlace */
+.checkbox-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.checkbox-container label {
+  font-size: 0.9em;
+  color: #333;
+}
+
+.checkbox-container a {
+  color: #007bff;
+  font-size: 0.9em;
+  text-decoration: none;
+}
+
+.checkbox-container a:hover {
+  text-decoration: underline;
+}
+
+/* Botón principal */
+button.btn {
+  width: 100%;
+  padding: 14px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+button.btn:hover {
+  background-color: #0056b3;
+}
+
+/* Enlace para crear cuenta */
+.crear-cuenta {
+  display: block;
+  text-align: center;
+  margin-top: 15px;
+  color: #007bff;
+  text-decoration: none;
+  font-size: 0.95em;
+}
+
+.crear-cuenta:hover {
+  text-decoration: underline;
+}

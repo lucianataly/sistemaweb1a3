@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Programación Semanal</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.2/main.min.css" rel="stylesheet">
+  <!-- Agregar script de locales de FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.2/locales-all.min.js"></script>
+  <style>
+    body{margin:0;font-family:'Segoe UI',sans-serif;background:#f4f4f4;display:flex;flex-direction:column;min-height:100vh}
+    header{background:#222;color:#fff;border-bottom:5px solid #ffd700;padding:20px 30px}
+    .header-content{display:flex;align-items:center;justify-content:center;gap:20px}
+    .header-content img{height:140px;border-radius:0}
+    .header-content h2{font-size:40px;font-weight:bold;margin:0}
+    main{display:flex;flex-direction:row;justify-content:center;align-items:flex-start;padding:20px;gap:20px;background:#fff;border-top:5px solid #ffd700;border-bottom:5px solid #ffd700}
+    .center,.right{width:800px;display:flex;flex-direction:column}
+    .center h1,.right h3{font-size:32px;margin:0;padding-bottom:20px;text-align:center}
+    #calendar{background:#fff;color:#000;border-radius:8px;padding:10px;box-shadow:0 0 10px rgba(0,0,0,.1)}
+    .right{background:#f9f9f9;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1)}
+    input[type=text],input[type=time],input[type=date]{width:100%;padding:10px;margin-bottom:8px;border-radius:4px;border:1px solid #ccc;font-size:16px}
+    button{padding:10px 20px;background:#ffd700;border:none;color:#000;font-size:16px;cursor:pointer;border-radius:4px;width:100%}
+    footer{height:5px;background:#ffd700}
+
+    /* ---------- ESTILOS EXCLUSIVOS PARA EL PDF ---------- */
+    #weekly-table-pdf-content{display:block!important;visibility:visible!important;position:relative!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;padding:0!important;margin:0!important;page-break-inside:avoid!important;background:#fff!important}
+    #weekly-table-pdf-content *{box-sizing:border-box!important}
+    #weekly-table-pdf-content table{width:100%!important;max-width:100%!important;table-layout:fixed!important;border-collapse:collapse!important;page-break-inside:avoid!important;font-size:7.3pt!important}
+    #weekly-table-pdf-content th,#weekly-table-pdf-content td{border:1.5px solid #222!important;padding:1.5px 2px!important;word-wrap:break-word!important;overflow-wrap:break-word!important;vertical-align:middle!important;text-align:center!important;line-height:1.02!important}
+    #weekly-table-pdf-content ul li{font-size:9.5pt!important}
+    #weekly-table-pdf-content .firma-prof{font-size:12px!important}
+    #weekly-table-pdf-content .firma-cargo{font-size:11px!important}
+    /* ---------- FIN ESTILOS PDF ---------- */
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <img src="escudoIE15513.jpg" alt="Escudo Institucional">
+    <h2>Asistencia al aula de AIP</h2>
+  </div>
+</header>
+
+<main>
+  <div class="center">
+    <h1>Programación Semanal</h1>
+    <div id="calendar"></div>
+    <div style="margin-top:30px">
+      <button id="show-weekly-schedule" style="background:#4CAF50;color:white;font-weight:bold">Ver Horario Semanal</button>
+    </div>
+    <div style="margin-top:10px">
+      <label style="display:flex;gap:8px;align-items:center;justify-content:center">
+        <span style="font-weight:bold;color:#222">Seleccionar fecha (semana):</span>
+        <input type="date" id="week-date">
+      </label>
+    </div>
+    <div style="margin-top:10px">
+      <button id="download-weekly-pdf" style="background:#2e74b5;color:white;font-weight:bold">Descargar reporte semanal (PDF)</button>
+    </div>
+    <div id="weekly-schedule-table" style="margin-top:20px"></div>
+  </div>
+
+  <div class="right">
+    <h3>Añadir Nuevo Horario</h3>
+    <form id="new-schedule-form">
+      <input type="text" id="teacher-name" placeholder="Nombre y Apellidos del Profesor" required>
+      <input type="text" id="grade-section" placeholder="Grado y Sección" required>
+      <input type="date" id="session-date" required>
+      <input type="time" id="start-time" required>
+      <input type="time" id="end-time" required>
+      <button type="submit">Añadir Horario</button>
+    </form>
+  </div>
+</main>
+
+<footer></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.2/main.min.js"></script>
+<script src="Backend/app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const btnShow = document.getElementById('show-weekly-schedule');
+  const tableDiv = document.getElementById('weekly-schedule-table');
+
+  const fmtYMD = d => {
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  };
+
+  btnShow.addEventListener('click', () => {
+    const input = document.getElementById('week-date').value;
+    // Parsear la fecha como local para evitar desplazamientos por zona horaria
+    const base = input ? parseYMDLocal(input) : new Date();
+    const day = base.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const mon = new Date(base);
+    mon.setDate(base.getDate() + diff);
+    const weekStart = fmtYMD(mon);
+
+    fetch(`http://localhost:3000/api/weekly-schedule?weekStart=${weekStart}`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => renderWeeklyTable(data, tableDiv))
+      .catch(() => tableDiv.innerHTML = '<div style="color:red">No se pudo obtener el horario semanal.</div>');
+  });
+
+  function downloadWeeklyPDF() {
+    const el = document.getElementById('weekly-table-pdf-content');
+    if (!el?.querySelector('table')) return alert('Genere primero el horario semanal.');
+    el.style.display = 'block'; el.style.visibility = 'visible'; el.style.position = 'relative';
+    setTimeout(() => {
+      html2pdf().set({
+        margin: [3,3,3,3],
+        filename: 'Horario_Semanal_AIP.pdf',
+        image: {type:'jpeg', quality:.98},
+        html2canvas: {scale:.90, height:740, width:1123, useCORS:true, backgroundColor:'#fff', scrollY:0, scrollX:0, letterRendering:true, logging:false},
+        jsPDF: {unit:'pt', format:'a4', orientation:'landscape', compress:true},
+        pagebreak: {mode:['avoid-all','css','legacy'], avoid:'table'}
+      }).from(el).save();
+    }, 800);
+  }
+
+  function parseYMDLocal(ds) {
+    const [y,m,d] = String(ds).split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+
+  function renderWeeklyTable(data, container, autoDL = false) {
+    if (!data?.table) return container.innerHTML = '<div style="color:red">Sin datos.</div>';
+    const monday = parseYMDLocal(data.week[0]);
+    const friday = new Date(monday); friday.setDate(monday.getDate()+4);
+    const weekEnd = fmtYMD(friday);
+
+    let h = `<div id='weekly-table-pdf-content'>`;
+    const fmt = d => d.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'});
+    h += `
+      <div>
+        <h2 style="margin:20px 0;font-size:16px;text-align:center">
+          HORARIO DE INGRESO AL AIP DE LA I.E EMBLEMÁTICA 15513. TURNO MAÑANA
+          </h2>
+          <div style="text-align:center;font-size:14px;font-weight:bold;margin:15px 0">
+            SEMANA DEL ${fmt(monday)} AL ${fmt(friday)}
+          </div>
+          <div style="margin:15px 0;border-top:2px solid #000"></div>
+      </div>
+      <div style="margin-bottom:3mm"><table>
+        <thead><tr style="background:#8ee000;color:#222;font-weight:bold">
+          <th>DÍA<br>HORA</th>`;
+    data.week.forEach(d => {
+      const date = parseYMDLocal(d);
+      h += `<th>${date.toLocaleDateString('es-PE',{weekday:'long'}).toUpperCase()}<br>${date.toLocaleDateString('es-PE',{day:'2-digit'})} DE ${date.toLocaleDateString('es-PE',{month:'long'}).toUpperCase()}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    data.hours.forEach((hr, i) => {
+      h += `<tr style="background:${i%2?'#fff':'#f9f9f9'}"><td style="font-weight:bold">${hr.start}<br>${hr.end}</td>`;
+      data.table.forEach(day => {
+        const c = day.horarios[i];
+        let sty = '', txt = '';
+        if (c.label === 'ACTIVIDADES PERMANENTES') { sty = 'background:#2e74b5;color:#fff;font-weight:bold'; txt = 'ACTIVIDADES<br>PERMANENTES'; }
+        else if (c.label === 'RECREO') { sty = 'background:#ffe066;color:#b8860b;font-weight:bold'; txt = 'RECREO'; }
+        else if (!day.isLaborable) { sty = 'background:#e0e0e0;color:#222;font-weight:bold'; txt = 'NO LABORABLE'; }
+        else if (c.feriado || day.isFeriado) { sty = 'background:#ffcccc;color:#b71c1c;font-weight:bold'; txt = 'FERIADO'; }
+        else if (c.isVacation) { sty = 'background:#FFB6C1;color:#d81b60;font-weight:bold'; txt = c.vacationDescription || 'VACACIONES'; }
+        else if (c.eventos.length) txt = c.eventos.map(e => {
+          if (e.unexpected) {
+            return `<div style="margin-bottom:2px;background:#FFE0B2;padding:4px;border-radius:3px"><span style="font-weight:bold;font-size:7pt;color:#d84315">ACTIVIDAD EN LA IE</span><br><span style="font-weight:bold;font-size:6.5pt">Prof. ${e.teacherName}</span><br><span style="font-size:6.5pt">${e.gradeSection}</span>${e.unexpectedNote?'<br><small>'+e.unexpectedNote+'</small>':''}</div>`;
+          }
+          return `<div style="margin-bottom:2px"><span style="font-weight:bold;font-size:6.5pt">Prof. ${e.teacherName}</span><br><span style="font-size:6.5pt">${e.gradeSection}</span></div>`;
+        }).join('<hr style="margin:2px 0;border-top:1px solid #999">');
+        h += `<td style="${sty}">${txt}</td>`;
+      });
+      h += '</tr>';
+    });
+    h += `</tbody></table></div>
+      <div style="margin-top:30px">
+        <div style="font-weight:bold;margin-bottom:10px">RECOMENDACIONES DEL USO</div>
+        <ul style="margin:0;padding:0 0 0 30px">
+          <li style="margin-bottom:8px">Los estudiantes deben ingresar acompañados de su docente, sin mochila.</li>
+          <li style="margin-bottom:8px">El o la docente debe coordinar previamente con el docente responsable de innovación para dar a conocer sobre los recursos TIC que utilizarán durante la sesión.</li>
+          <li style="margin-bottom:8px">El o la docente debe presentar su actividad de aprendizaje en el cuaderno de Aula de Innovaciones Pedagógicas antes de ingresar al aula.</li>
+          <li style="margin-bottom:8px">El o la docente debe firmar el cuaderno de asistencia del AIP consignando los datos correspondientes.</li>
+        </ul>
+      </div>
+      <div style="margin-top:40px">
+        <div style="margin:0 auto;width:250px;height:30px;border-bottom:2px solid #000"></div>
+        <div style="text-align:center;font-weight:bold;margin-top:5px">Prof. Lissety Tume Acaro</div>
+        <div class="firma-cargo" style="text-align:center;font-size:11px;line-height:1.3;color:#444">Docente de AIP</div>
+      </div>
+    </div></div>`;
+    container.innerHTML = h;
+    if (autoDL) setTimeout(() => downloadWeeklyPDF(), 800);
+  }
+
+  document.getElementById('download-weekly-pdf').addEventListener('click', () => {
+    const input = document.getElementById('week-date').value;
+    // Parsear la fecha como local para evitar desplazamientos por zona horaria
+    const base = input ? parseYMDLocal(input) : new Date();
+    const day = base.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const mon = new Date(base);
+    mon.setDate(base.getDate() + diff);
+    const weekStart = fmtYMD(mon);
+
+    fetch(`http://localhost:3000/api/weekly-schedule?weekStart=${weekStart}`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => renderWeeklyTable(data, tableDiv, true))
+      .catch(() => alert('No se pudo obtener el horario semanal.'));
+  });
+});
+</script>
+</body>
+</html>
